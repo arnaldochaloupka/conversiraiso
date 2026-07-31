@@ -255,7 +255,11 @@ footer{
     <div class="main-title">Conversor MARCXML / MARC21 → ISO Aguapey</div>
     <button id="darkModeToggle"><i class="fas fa-moon"></i></button>
 </header>
-
+<div class="paste-zone" style="border-color: #803020; background: #fdf2f0; margin-top: 20px;">
+    <p class="paste-zone-title" style="color: #803020;"><strong>✨ Enriquecer Lote Masivo con IA (Magia Aguapey)</strong></p>
+    <textarea id="loteIaPegado" placeholder="Pegá acá tu lote de registros MARC21 crudos..."></textarea>
+    <button id="btnEjecutarMagia" type="button" style="background-color: #803020;">Procesar Lote con IA</button>
+</div>
 <div class="split-container">
     <div class="left-panel">
         <div id="dropZone" class="drop-zone">
@@ -855,6 +859,31 @@ function showToast(msg, type='success', duration=3500) {
     const timer = setTimeout(close, duration);
     okBtn.onclick = () => { clearTimeout(timer); close(); };
 }
+document.getElementById('btnEjecutarMagia').onclick = async () => {
+    const textoLote = document.getElementById('loteIaPegado').value.trim();
+    if (!textoLote) {
+        alert('Pegá el lote de registros primero');
+        return;
+    }
+    alert('✨ La IA está procesando el lote... Aguardá un momento.');
+    try {
+        const respuesta = await fetch('/.netlify/functions/enriquecer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ registrosTexto: textoLote })
+        });
+        if (!respuesta.ok) throw new Error('Error en el servidor');
+        const datos = await respuesta.json();
+        if (datos.resultado) {
+            procesarTextoGenerico(datos.resultado, 'txt', 'Lote_Enriquecido_IA.mrk');
+            alert('¡Lote enriquecido con éxito! Ya podés descargar tu .iso');
+        } else {
+            throw new Error('Sin respuesta válida');
+        }
+    } catch (err) {
+        alert('❌ Error: ' + err.message);
+    }
+};
 </script>
 </body>
 </html>
