@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Conversor MARCXML / MARC21 → ISO Aguapey</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+body{font-family:system-ui,Arial,sans-serif;margin:0;padding-bottom:80px;background:#f0eff5;color:#2a2340}
+header{
+    display:flex;flex-direction:row;align-items:center;justify-content:space-between;
+    gap:8px;padding:10px 16px;background:#b8d8c8;border-bottom:2px solid #8fbfa8;min-height:60px;
+}
+.main-title{font-size:22px;font-weight:700;color:#2a5c45;margin:0;flex:1;text-align:center;}
+#btnSubirMarcxml{
+    padding:0 18px;height:42px;border-radius:20px;background-color:#4a8c6e;color:white;
+    font-weight:700;font-size:14px;display:inline-flex;align-items:center;justify-content:center;
+    gap:7px;box-shadow:0 3px 8px rgba(0,100,60,0.25);border:none;cursor:pointer;white-space:nowrap;
+    transition:background-color 0.2s,transform 0.2s;
+}
+#btnSubirMarcxml:hover{background-color:#2a6b4e;transform:translateY(-1px);}
+#darkModeToggle{
+    border:none;border-radius:50%;padding:0;cursor:pointer;background:#4a8c6e;color:#fff;
+    flex-shrink:0;height:40px;width:40px;display:flex;align-items:center;justify-content:center;
+    font-size:18px;transition:background-color 0.2s;
+}
+#darkModeToggle:hover{background-color:#2a6b4e;}
+
+.drop-zone{
+    border:3px dashed #8fbfa8;border-radius:16px;
+    background:#eaf5ef;padding:40px 24px;text-align:center;cursor:pointer;
+    transition:border-color 0.2s,background 0.2s;
+}
+.drop-zone:hover,.drop-zone.drag-over{border-color:#2a6b4e;background:#d4edda;}
+.drop-zone i{font-size:48px;color:#4a8c6e;margin-bottom:12px;display:block;}
+.drop-zone p{margin:6px 0;color:#2a5c45;font-size:16px;}
+.drop-zone small{color:#666;}
+.drop-zone .archivo-cargado{display:none;color:#2a6b4e;font-weight:700;margin-top:10px;}
+.drop-zone.file-loaded .archivo-cargado{display:block;}
+
+.paste-zone, .paste-zone-mrk{
+    border-radius:16px; padding:20px; text-align:center; margin-top:16px;
+}
+.paste-zone{ border:3px dashed #d8c8a0; background:#fdf8ee; }
+.paste-zone-mrk{ border:3px dashed #a8c8e0; background:#eef6fc; }
+.paste-zone-title{ margin:0 0 10px 0; font-size:15px; }
+.paste-zone .paste-zone-title{ color:#8a6d2f; }
+.paste-zone-mrk .paste-zone-title{ color:#2f5f8a; }
+
+.paste-zone textarea, .paste-zone-mrk textarea{
+    width:100%;box-sizing:border-box;min-height:160px;resize:vertical;
+    font-family:'Courier New',monospace;font-size:12px;line-height:1.5;
+    border-radius:8px;padding:10px; background:#fff;color:#2a2340;
+}
+.paste-zone textarea{ border:1px solid #d8c8a0; }
+.paste-zone textarea:focus{ outline:none; border-color:#c9a94f; }
+.paste-zone-mrk textarea{ border:1px solid #a8c8e0; }
+.paste-zone-mrk textarea:focus{ outline:none; border-color:#3f80b8; }
+
+.paste-zone button, .paste-zone-mrk button{
+    margin-top:12px;padding:0 18px;height:42px;border-radius:20px;
+    color:white;font-weight:700;font-size:14px;
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    border:none;cursor:pointer;transition:transform 0.2s;
+}
+.paste-zone button{ background-color:#c9a94f; box-shadow:0 3px 8px rgba(120,90,20,0.25); }
+.paste-zone button:hover{ background-color:#a8862f; transform:translateY(-1px); }
+.paste-zone-mrk button{ background-color:#3f80b8; box-shadow:0 3px 8px rgba(20,70,120,0.25); }
+.paste-zone-mrk button:hover{ background-color:#2f638f; transform:translateY(-1px); }
+
+/* Layout */
+.split-container{
+    display:flex;flex-direction:column;gap:20px;margin:20px 18px 0 18px;align-items:flex-start;
+}
+@media(min-width:900px){
+    .split-container{flex-direction:row;}
+    .left-panel{flex:0 0 380px;position:sticky;top:20px;}
+    .right-panel{flex:1;min-width:0;}
+}
+.left-panel{width:100%;}
+.right-panel{width:100%;}
+
+.ficha-placeholder{
+    border:2px dashed #d8d0e8;border-radius:14px;padding:50px 20px;text-align:center;color:#888;
+}
+.ficha-placeholder i{font-size:40px;margin-bottom:12px;display:block;color:#b8b0cc;}
+
+.ficha-card{
+    background:#fef6e4;border:1px solid #d8d0e8;border-radius:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.07);padding:16px 18px;
+}
+.ficha-header{margin-bottom:12px;}
+#fichaTitulo{font-size:20px;font-weight:800;color:#2a2340;margin:0 0 8px 0;line-height:1.25;}
+.ficha-resumen{font-size:14px;line-height:1.6;}
+.meta-item{margin-right:14px;display:inline-block;}
+.meta-item i{color:#555;font-style:normal;font-size:12px;text-transform:uppercase;font-weight:700;margin-right:4px;}
+.meta-temas{padding-top:6px;margin-top:6px;font-size:13px;}
+.meta-temas i{display:block;font-size:11px;font-weight:700;text-transform:uppercase;color:#666;margin-bottom:4px;}
+.meta-temas b{
+    display:inline-block;background:rgba(0,123,255,0.08);color:#0056b3;
+    padding:2px 8px;border-radius:4px;font-size:11px;margin:2px;text-transform:uppercase;font-weight:600;
+}
+
+/* Paginación Lotes */
+#paginacionContainer{
+    display:none; align-items:center; justify-content:space-between; 
+    margin-bottom: 15px; background: #eaf5ef; padding: 12px 18px; 
+    border-radius: 8px; border: 1px solid #8fbfa8;
+}
+#paginacionContainer button {
+    background: #4a8c6e; color: white; border: none; padding: 6px 14px;
+    border-radius: 6px; font-weight: bold; cursor: pointer;
+}
+#paginacionContainer button:disabled { background: #a5c7b7; cursor: not-allowed; }
+#paginacionContainer button:not(:disabled):hover { background: #2a6b4e; }
+#textoPaginacion { color: #2a5c45; font-weight: bold; }
+
+.ficha-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;}
+.ficha-actions button{
+    font-size:14px;padding:11px 18px;font-weight:700;border-radius:8px;border:none;cursor:pointer;
+    color:white;box-shadow:0 2px 6px rgba(0,0,0,0.18);transition:opacity 0.15s;
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+}
+.ficha-actions button:hover{opacity:0.85;}
+
+.ficha-fields-title{font-size:13px;font-weight:700;color:#555;text-transform:uppercase;margin:6px 0 8px 0;}
+.ficha-fields-title small{text-transform:none;font-weight:400;color:#888;}
+.ficha-fields{
+    background:#f8f8f8;border:1px solid #ddd;border-radius:8px;
+    padding:14px;font-size:13px;font-family:'Courier New',monospace;line-height:1.9;
+    max-height:60vh;overflow:auto;
+}
+.marc-row{margin-bottom:6px;word-break:break-word;}
+.marc-tag{color:#0056b3;font-weight:700;margin-right:8px;}
+.marc-sub{margin-right:12px;display:inline-block;}
+.marc-sub b{color:#888;margin-right:2px;}
+.marc-value{
+    outline:none;border-bottom:1px dashed #bbb;padding:1px 3px;border-radius:3px;
+    cursor:text;min-width:6px;display:inline-block;
+}
+.marc-value:hover{background:rgba(0,123,255,0.08);border-bottom-color:#007bff;}
+.marc-value:focus{background:#fff9d6;border-bottom-color:#c07050;}
+
+.marc-ind{
+    outline:none;border-bottom:1px dotted #999;padding:0 3px;border-radius:2px;
+    cursor:text;display:inline-block;min-width:8px;
+}
+.marc-ind:hover{background:rgba(0,123,255,0.08);}
+.marc-ind:focus{background:#fff9d6;}
+
+.field-toolbar{margin-left:10px;display:inline-flex;gap:4px;vertical-align:middle;}
+.btn-mini{
+    background:#ddd;border:none;border-radius:4px;width:22px;height:22px;font-size:11px;
+    cursor:pointer;color:#555;display:inline-flex;align-items:center;justify-content:center;padding:0;
+}
+.btn-mini:hover{background:#c8c8c8;}
+.btn-mini.btn-del-field:hover{background:#e05050;color:#fff;}
+.btn-mini.btn-dup:hover{background:#4a8c6e;color:#fff;}
+.btn-mini-x{
+    background:none;border:none;color:#bbb;cursor:pointer;font-size:13px;
+    margin-left:2px;padding:0 3px;line-height:1;
+}
+.btn-mini-x:hover{color:#e05050;}
+
+.ficha-add-row{margin-top:12px;}
+#btnAgregarCampo{
+    background:#4a8c6e;color:#fff;border:none;border-radius:8px;padding:10px 16px;
+    font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-size:13px;
+}
+#btnAgregarCampo:hover{opacity:0.85;}
+
+.add-field-form{ margin-top:12px;border:1px solid #d8d0e8;border-radius:10px;padding:14px;background:#fff; }
+.aff-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.aff-row label{font-size:13px;font-weight:700;color:#555;min-width:90px;}
+.aff-row input[type="text"]{padding:7px 9px;border:1px solid #ccc;border-radius:6px;font-size:13px;}
+.aff-sub-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;}
+.aff-sub-row input.aff-code{width:44px;text-align:center;}
+.aff-sub-row input.aff-valor{flex:1;min-width:120px;}
+.aff-sub-row button{ background:none;border:none;color:#bbb;cursor:pointer;font-size:15px;padding:0 4px; }
+.aff-sub-row button:hover{color:#e05050;}
+#affAddSub{
+    background:#eaf5ef;color:#2a6b4e;border:1px dashed #8fbfa8;border-radius:6px;
+    padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:10px;
+}
+#affAddSub:hover{background:#d4edda;}
+.aff-buttons{display:flex;gap:8px;margin-top:6px;}
+.aff-buttons button{ padding:9px 16px;border:none;border-radius:6px;font-weight:700;cursor:pointer;color:#fff;font-size:13px; }
+.aff-help{font-size:12px;color:#888;margin:-4px 0 10px 0;}
+
+/* Dark mode basic settings */
+body.dark-mode{background:#121212;color:#e0e0e0;}
+body.dark-mode header{background:#1e1e1e;}
+body.dark-mode .drop-zone{background:#1e1e1e;border-color:#4a8c6e;}
+body.dark-mode .drop-zone p{color:#b8d8c8;}
+body.dark-mode .drop-zone:hover,.drop-zone.dark-mode.drag-over{background:#223322;}
+body.dark-mode .ficha-placeholder{border-color:#333;color:#888;}
+body.dark-mode .ficha-card{background:#1f1f1f !important;border-color:#333;}
+body.dark-mode .ficha-fields{background:#1a1a1a;color:#e0e0e0;border-color:#444;}
+body.dark-mode .marc-value:hover{background:rgba(74,140,110,0.2);}
+body.dark-mode .marc-value:focus{background:#3a331a;}
+body.dark-mode #paginacionContainer { background: #1a2920; border-color: #2a6b4e; }
+body.dark-mode #textoPaginacion { color: #b8d8c8; }
+body.dark-mode .paste-zone{background:#241f14;border-color:#8a6d2f;}
+body.dark-mode .paste-zone-mrk{background:#14202b;border-color:#2f5f8a;}
+body.dark-mode .paste-zone textarea, body.dark-mode .paste-zone-mrk textarea {background:#1e1e1e;color:#eee;}
+body.dark-mode .add-field-form{background:#1f1f1f;border-color:#333;}
+body.dark-mode .aff-row input[type="text"]{background:#2a2a2a;color:#eee;border-color:#444;}
+
+/* Toast */
+#toast-container{
+    position:fixed;top:24px;left:50%;transform:translateX(-50%);
+    z-index:99999;display:flex;flex-direction:column;align-items:center;gap:10px;pointer-events:none;
+}
+.toast{
+    background:#2a2340;color:#fff;border-radius:12px;padding:14px 20px;
+    min-width:260px;max-width:420px;box-shadow:0 6px 24px rgba(0,0,0,0.35);
+    font-size:14px;line-height:1.5;display:flex;flex-direction:column;gap:10px;
+    pointer-events:all;animation:toastIn 0.25s ease;
+}
+.toast.warning{border-left:4px solid #f0a040;}
+.toast.error{border-left:4px solid #e05050;}
+.toast.success{border-left:4px solid #4a8c6e;}
+.toast-msg{white-space:pre-line;}
+.toast-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.toast-bar-wrap{flex:1;height:4px;background:rgba(255,255,255,0.15);border-radius:2px;overflow:hidden;}
+.toast-bar{height:100%;background:rgba(255,255,255,0.5);border-radius:2px;width:100%;transition:width linear;}
+.toast-ok{
+    background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:12px;font-weight:700;
+    padding:4px 14px;border-radius:20px;cursor:pointer;white-space:nowrap;
+}
+.toast-ok:hover{background:rgba(255,255,255,0.28);}
+@keyframes toastIn{from{opacity:0;transform:translateY(-12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0);}to{opacity:0;transform:translateY(-12px);}}
+
+footer{
+    position:fixed;bottom:0;left:0;width:100%;background-color:#333;color:#f0f0f0;
+    padding:8px 0;box-shadow:0 -2px 10px rgba(0,0,0,0.2);font-size:13px;z-index:1000;text-align:center;
+}
+.footer-content{max-width:1200px;margin:0 auto;padding:0 18px;display:flex;flex-direction:column;gap:4px;align-items:center;}
+.footer-line{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;}
+.footer-line a{color:#f0f0f0;text-decoration:none;transition:color 0.2s;display:flex;align-items:center;}
+.footer-line a:hover{color:#4a8c6e;}
+.footer-line i{margin-right:5px;color:#4a8c6e;}
+.footer-title{font-weight:700;color:#ffffff;}
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+
+<header>
+    <input type="file" id="inputMarcxml" accept=".marcxml,.xml,.txt,.mrk" style="display:none;">
+    <button id="btnSubirMarcxml">
+        <i class="fas fa-file-import"></i> Subir archivo (XML / TXT / MRK)
+    </button>
+    <div class="main-title">Conversor MARCXML / MARC21 → ISO Aguapey</div>
+    <button id="darkModeToggle"><i class="fas fa-moon"></i></button>
+</header>
+
+<div class="split-container">
+    <div class="left-panel">
+        <div id="dropZone" class="drop-zone">
+            <i class="fas fa-file-code"></i>
+            <p><strong>Arrastrá tu archivo aquí</strong></p>
+            <p>o hacé clic en el botón del encabezado</p>
+            <small>Acepta: .marcxml / .xml / .txt / .mrk</small>
+            <div class="archivo-cargado"><i class="fas fa-check-circle"></i> <span id="nombreArchivoCargado"></span></div>
+        </div>
+
+        <div id="pasteZone" class="paste-zone">
+            <p class="paste-zone-title"><i class="fas fa-paste"></i> <strong>Pegar lote MARCXML</strong></p>
+            <textarea id="marcxmlPegado" placeholder="Pegá acá el contenido MARCXML (puede tener varios <record>)"></textarea>
+            <button id="btnConvertirPegado" type="button"><i class="fas fa-wand-magic-sparkles"></i> Convertir MARCXML</button>
+        </div>
+
+        <div id="pasteZoneMrk" class="paste-zone-mrk">
+            <p class="paste-zone-title"><i class="fas fa-paste"></i> <strong>Pegar lote MARC21 (texto plano)</strong></p>
+            <textarea id="marc21Pegado" placeholder="Pegá acá uno o varios registros MARC21. Separará cada registro automáticamente."></textarea>
+            <button id="btnConvertirMarc21" type="button"><i class="fas fa-wand-magic-sparkles"></i> Convertir MARC21</button>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div id="fichaPlaceholder" class="ficha-placeholder">
+            <i class="fas fa-book-open"></i>
+            <p>Acá va a aparecer la ficha del registro. Podés cargar lotes enteros de libros.</p>
+        </div>
+
+        <div id="fichaContainer" class="ficha-card" style="display:none;">
+            
+            <div id="paginacionContainer">
+                <button id="btnRegAnterior"><i class="fas fa-chevron-left"></i> Anterior</button>
+                <span id="textoPaginacion">Registro 1 de 1</span>
+                <button id="btnRegSiguiente">Siguiente <i class="fas fa-chevron-right"></i></button>
+            </div>
+
+            <div class="ficha-header">
+                <h2 id="fichaTitulo"></h2>
+                <div id="fichaResumen" class="ficha-resumen"></div>
+            </div>
+
+            <div class="ficha-actions">
+                <button id="btnGuardarCambios" style="background:#4a8c6e;display:none;">
+                    <i class="fas fa-save"></i> Guardar cambios
+                </button>
+                <button id="btnDescargarIsoActual" style="background:#c07050;">
+                    <i class="fas fa-file-export"></i> Descargar Actual (.iso)
+                </button>
+                <button id="btnDescargarIsoLote" style="background:#803020; display:none;">
+                    <i class="fas fa-layer-group"></i> Descargar Lote Completo (<span id="lblLoteCount"></span>)
+                </button>
+            </div>
+
+            <div class="ficha-fields-title">
+                Ficha MARC completa <small>(hacé clic en cualquier dato para modificarlo)</small>
+            </div>
+            <div id="fichaFields" class="ficha-fields"></div>
+
+            <div class="ficha-add-row">
+                <button id="btnAgregarCampo" type="button">
+                    <i class="fas fa-plus"></i> Agregar campo
+                </button>
+            </div>
+            <div id="addFieldForm" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    <div class="footer-content">
+        <div class="footer-line footer-title">Biblioteca Pedagógica Nº3 "Paulo Freire"</div>
+        <div class="footer-line">
+            <a href="https://maps.app.goo.gl/pM9sRGCC7MJ6q8W48" target="_blank"><i class="fas fa-map-marker-alt"></i> Brown 505 - Esquel, Chubut.</a>
+            <a href="tel:+542945450501"><i class="fas fa-phone"></i> 02945-450501</a>
+        </div>
+    </div>
+</footer>
+
+<script>
+// ─── Estado global (Lotes) ────────────────────────────────────
+let loteRegistros = [];   // [{ marcRaw: String, campos: Array }]
+let indiceActual = 0;
+let currentFields = [];   // Puntero a loteRegistros[indiceActual].campos
+let isDirty = false;      
+
+// ─── Referencias DOM ──────────────────────────────────────────
+const inputMarcxml     = document.getElementById('inputMarcxml');
+const btnSubir         = document.getElementById('btnSubirMarcxml');
+const dropZone         = document.getElementById('dropZone');
+const nombreArchivoEl  = document.getElementById('nombreArchivoCargado');
+const fichaPlaceholder = document.getElementById('fichaPlaceholder');
+const fichaContainer   = document.getElementById('fichaContainer');
+const fichaTitulo      = document.getElementById('fichaTitulo');
+const fichaResumen     = document.getElementById('fichaResumen');
+const fichaFields      = document.getElementById('fichaFields');
+const btnGuardarCambios = document.getElementById('btnGuardarCambios');
+const btnDescargarIsoActual = document.getElementById('btnDescargarIsoActual');
+const btnDescargarIsoLote   = document.getElementById('btnDescargarIsoLote');
+
+const btnRegAnterior = document.getElementById('btnRegAnterior');
+const btnRegSiguiente = document.getElementById('btnRegSiguiente');
+
+// ─── Drag & drop ──────────────────────────────────────────────
+dropZone.addEventListener('click', () => inputMarcxml.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) procesarArchivo(file);
+});
+btnSubir.onclick = () => inputMarcxml.click();
+inputMarcxml.onchange = e => {
+    const file = e.target.files[0];
+    if (file) procesarArchivo(file);
+    inputMarcxml.value = '';
+};
+
+// ─── Pegado Manual ────────────────────────────────────────────
+document.getElementById('btnConvertirPegado').onclick = () => {
+    const text = document.getElementById('marcxmlPegado').value;
+    if (!text) return showToast('Pegá el contenido primero', 'error');
+    procesarTextoGenerico(text, 'xml', 'Pegado Manual (XML)');
+};
+document.getElementById('btnConvertirMarc21').onclick = () => {
+    const text = document.getElementById('marc21Pegado').value;
+    if (!text) return showToast('Pegá el contenido primero', 'error');
+    procesarTextoGenerico(text, 'txt', 'Pegado Manual (MARC21)');
+};
+
+// ─── Paginación Eventos ───────────────────────────────────────
+btnRegAnterior.onclick = () => {
+    if(indiceActual > 0) mostrarFicha(indiceActual - 1);
+};
+btnRegSiguiente.onclick = () => {
+    if(indiceActual < loteRegistros.length - 1) mostrarFicha(indiceActual + 1);
+};
+
+// ─── Dark mode ────────────────────────────────────────────────
+document.getElementById('darkModeToggle').onclick = function() {
+    document.body.classList.toggle('dark-mode');
+    this.innerHTML = document.body.classList.contains('dark-mode') ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+};
+
+// ─── Escapar HTML ─────────────────────────────────────────────
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+
+function normalizarEdicion(texto) {
+    if (!texto) return texto;
+    return texto.replace(/(\d)\s*[°ºª]\s*/g, '$1a ').replace(/\s+/g, ' ').trim();
+}
+
+// ─────────────────────────────────────────────────────────────
+// PROCESAMIENTO GENERAL DE ARCHIVOS Y LOTES
+// ─────────────────────────────────────────────────────────────
+async function procesarArchivo(file) {
+    showToast('Procesando archivo...', 'success', 1000);
+    try {
+        const text = await file.text();
+        if (!text || !text.trim()) throw new Error('El archivo está vacío');
+        const tipo = (file.name.toLowerCase().endsWith('.xml') || file.name.toLowerCase().endsWith('.marcxml')) ? 'xml' : 'txt';
+        procesarTextoGenerico(text, tipo, file.name);
+    } catch(err) {
+        showToast('❌ ' + err.message, 'error', 5000);
+    }
+}
+
+function procesarTextoGenerico(texto, formato, nombreRef) {
+    try {
+        if(formato === 'xml') procesarMarcxmlLote(texto);
+        else procesarMarc21Lote(texto);
+
+        if (loteRegistros.length > 0) {
+            nombreArchivoEl.textContent = nombreRef;
+            dropZone.classList.add('file-loaded');
+            iniciarLote();
+            showToast(`¡Se cargaron ${loteRegistros.length} registros! ✓`, 'success');
+        } else {
+            throw new Error('No se encontraron registros válidos');
+        }
+    } catch(err) {
+        showToast('❌ ' + err.message, 'error', 5000);
+    }
+}
+
+// ─── Procesar lote XML ───
+function procesarMarcxmlLote(xmlString) {
+    let xml = xmlString.replace(/xmlns[^=]*="[^"]*"/g, '').replace(/xmlns:[^=]*="[^"]*"/g, '').replace(/xsi:[^ ]*="[^"]*"/g, '');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'text/xml');
+    if (doc.getElementsByTagName('parsererror').length > 0) throw new Error('XML inválido o mal formado');
+
+    const records = doc.querySelectorAll('record');
+    loteRegistros = [];
+    records.forEach(record => {
+        let marcText = '';
+        const leaderEl = record.querySelector('leader');
+        if (leaderEl && leaderEl.textContent.trim()) marcText += '=LDR ' + leaderEl.textContent.trim() + '\n';
+
+        record.querySelectorAll('controlfield').forEach(cf => {
+            const tag = cf.getAttribute('tag');
+            const val = cf.textContent.trim();
+            if (tag && val && tag !== '000') marcText += `=${tag} ${val}\n`;
+        });
+
+        record.querySelectorAll('datafield').forEach(df => {
+            const tag = df.getAttribute('tag');
+            if (!tag) return;
+            const i1 = (df.getAttribute('ind1') || ' ') === ' ' ? '\\' : df.getAttribute('ind1');
+            const i2 = (df.getAttribute('ind2') || ' ') === ' ' ? '\\' : df.getAttribute('ind2');
+            let linea = `=${tag} ${i1}${i2}`;
+            let hasSubs = false;
+            df.querySelectorAll('subfield').forEach(sf => {
+                const code = sf.getAttribute('code');
+                let val = sf.textContent.trim();
+                if (code && val) {
+                    if (tag === '250' && code === 'a') val = normalizarEdicion(val);
+                    const tmp = document.createElement('textarea'); tmp.innerHTML = val; val = tmp.value;
+                    linea += `$${code}${val}`;
+                    hasSubs = true;
+                }
+            });
+            if (hasSubs) marcText += linea + '\n';
+        });
+        if (marcText) loteRegistros.push({ marcRaw: marcText, campos: null });
+    });
+}
+
+// ─── Procesar lote TXT/MRK ───
+function procesarMarc21Lote(texto) {
+    // Cortamos asumiendo que "=LDR" o "=000" inicia el registro
+    const fragmentos = texto.split(/(?==LDR\s|=\d{3}\s)/).map(t => t.trim()).filter(Boolean);
+    let registrosArmados = [];
+    let buf = "";
+    
+    // Reagrupar líneas que pertenecen a un mismo registro (todo lo que va entre =LDR y el proximo =LDR)
+    // Para simplificar, dividimos por =LDR estrictamente si existe, sino lo tomamos como 1 solo.
+    const porLDR = texto.split(/(?==LDR\s)/).map(t => t.trim()).filter(Boolean);
+    
+    loteRegistros = [];
+    for(let f of porLDR){
+        if(f.length > 10) loteRegistros.push({ marcRaw: f, campos: null });
+    }
+    // Fallback si no usan LDR (poco comun pero posible, toma todo junto)
+    if(loteRegistros.length === 0) loteRegistros.push({ marcRaw: texto, campos: null });
+}
+
+// ─────────────────────────────────────────────────────────────
+// NAVEGACIÓN Y FICHA
+// ─────────────────────────────────────────────────────────────
+function iniciarLote() {
+    // Parseamos todo el lote de entrada para que existan los campos en memoria
+    loteRegistros.forEach(reg => {
+        if(!reg.campos) reg.campos = parsearMrkACampos(reg.marcRaw);
+    });
+    mostrarFicha(0);
+}
+
+function mostrarFicha(idx) {
+    if (isDirty) guardarCambios(true);
+    indiceActual = idx;
+    currentFields = loteRegistros[idx].campos;
+    isDirty = false;
+    btnGuardarCambios.style.display = 'none';
+
+    fichaPlaceholder.style.display = 'none';
+    fichaContainer.style.display   = 'block';
+
+    // Actualizar UI paginación
+    document.getElementById('textoPaginacion').textContent = `Registro ${idx + 1} de ${loteRegistros.length}`;
+    btnRegAnterior.disabled = (idx === 0);
+    btnRegSiguiente.disabled = (idx === loteRegistros.length - 1);
+    document.getElementById('paginacionContainer').style.display = loteRegistros.length > 1 ? 'flex' : 'none';
+    
+    document.getElementById('lblLoteCount').textContent = loteRegistros.length;
+    btnDescargarIsoLote.style.display = loteRegistros.length > 1 ? 'inline-flex' : 'none';
+
+    actualizarResumen();
+    renderFichaFields();
+}
+
+function getCampoValor(tag, code) {
+    const f = currentFields.find(c => c.tag === tag && c.tipo === 'datos');
+    if (!f) return '';
+    const s = f.subcampos.find(s => s.code === code); return s ? s.valor : '';
+}
+function getCamposValores(tag, code) {
+    return currentFields.filter(c => c.tag === tag && c.tipo === 'datos')
+        .map(c => { const s = c.subcampos.find(s => s.code === code); return s ? s.valor : ''; }).filter(Boolean);
+}
+
+function actualizarResumen() {
+    let title    = getCampoValor('245','a').replace(/[/:;$]/g,'').trim();
+    let subTitle = getCampoValor('245','b').replace(/[/:;$]/g,'').trim();
+    let author   = getCampoValor('100','a') || getCampoValor('110','a') || getCampoValor('700','a');
+    author = (author || '').replace(/[/:;$]/g,'').trim();
+    let year = getCampoValor('260','c') || getCampoValor('264','c');
+    const ym = (year || '').match(/\d{4}/); year = ym ? ym[0] : (year || '').trim();
+    let isbn = getCampoValor('020','a').replace(/\s*=.*$/,'').trim();
+    let edition = normalizarEdicion(getCampoValor('250','a'));
+    
+    fichaTitulo.textContent = (title + (subTitle ? ' : ' + subTitle : '')) || '(Sin título)';
+    let metasHTML = '';
+    if (author)  metasHTML += `<span class="meta-item"><i>Autor:</i> <b>${escapeHtml(author)}</b></span>`;
+    if (edition) metasHTML += `<span class="meta-item"><i>Edición:</i> <b>${escapeHtml(edition)}</b></span>`;
+    if (year)    metasHTML += `<span class="meta-item"><i>Año:</i> <b>${escapeHtml(year)}</b></span>`;
+    if (isbn)    metasHTML += `<span class="meta-item"><i>ISBN:</i> <b>${escapeHtml(isbn)}</b></span>`;
+    fichaResumen.innerHTML = metasHTML;
+}
+
+function renderFichaFields() {
+    let html = '';
+    currentFields.forEach((f, i) => {
+        if (f.tipo === 'control') {
+            html += `<div class="marc-row" data-idx="${i}">
+                <span class="marc-tag">${escapeHtml(f.tag)}</span>
+                <span class="marc-value" contenteditable="true" spellcheck="false" data-idx="${i}" data-type="control">${escapeHtml(f.valor)}</span>
+                <span class="field-toolbar">
+                    <button type="button" class="btn-mini btn-del-field" data-idx="${i}"><i class="fas fa-trash"></i></button>
+                </span>
+            </div>`;
+        } else {
+            const subs = f.subcampos.map((s, si) => `
+                <span class="marc-sub"><b>$${escapeHtml(s.code)}</b><span class="marc-value" contenteditable="true" spellcheck="false" data-idx="${i}" data-subidx="${si}" data-type="sub">${escapeHtml(s.valor)}</span><button type="button" class="btn-mini-x" data-idx="${i}" data-subidx="${si}">&times;</button></span>`
+            ).join('');
+            html += `<div class="marc-row" data-idx="${i}">
+                <span class="marc-tag">${escapeHtml(f.tag)} <span class="marc-ind" contenteditable="true" spellcheck="false" data-idx="${i}" data-indpos="1">${escapeHtml(f.ind1)}</span><span class="marc-ind" contenteditable="true" spellcheck="false" data-idx="${i}" data-indpos="2">${escapeHtml(f.ind2)}</span></span>
+                ${subs}
+                <span class="field-toolbar">
+                    <button type="button" class="btn-mini btn-add-sub" data-idx="${i}"><i class="fas fa-plus"></i></button>
+                    <button type="button" class="btn-mini btn-dup" data-idx="${i}"><i class="fas fa-clone"></i></button>
+                    <button type="button" class="btn-mini btn-del-field" data-idx="${i}"><i class="fas fa-trash"></i></button>
+                </span>
+            </div>`;
+        }
+    });
+    fichaFields.innerHTML = html || '<em>No se encontraron campos.</em>';
+
+    fichaFields.querySelectorAll('.marc-value, .marc-ind').forEach(el => { el.addEventListener('input', marcarSucio); });
+    fichaFields.querySelectorAll('.marc-ind').forEach(el => { el.addEventListener('blur', () => el.textContent = el.textContent.trim().charAt(0) || '#'); });
+    fichaFields.querySelectorAll('.btn-add-sub').forEach(btn => btn.addEventListener('click', () => agregarSubcampoAlCampo(parseInt(btn.dataset.idx))));
+    fichaFields.querySelectorAll('.btn-dup').forEach(btn => btn.addEventListener('click', () => duplicarCampo(parseInt(btn.dataset.idx))));
+    fichaFields.querySelectorAll('.btn-del-field').forEach(btn => btn.addEventListener('click', () => eliminarCampo(parseInt(btn.dataset.idx))));
+    fichaFields.querySelectorAll('.btn-mini-x').forEach(btn => btn.addEventListener('click', () => eliminarSubcampo(parseInt(btn.dataset.idx), parseInt(btn.dataset.subidx))));
+}
+
+function marcarSucio() {
+    if (!isDirty) { isDirty = true; btnGuardarCambios.style.display = 'inline-flex'; }
+}
+
+function guardarCambios(silencioso) {
+    fichaFields.querySelectorAll('.marc-value').forEach(el => {
+        const idx = parseInt(el.dataset.idx, 10);
+        const val = el.textContent.replace(/\s+/g,' ').trim();
+        if (el.dataset.type === 'control') currentFields[idx].valor = val;
+        else currentFields[idx].subcampos[parseInt(el.dataset.subidx, 10)].valor = val;
+    });
+    fichaFields.querySelectorAll('.marc-ind').forEach(el => {
+        const idx = parseInt(el.dataset.idx, 10);
+        const val = el.textContent.trim().charAt(0) || '#';
+        if (el.dataset.indpos === '1') currentFields[idx].ind1 = val;
+        else currentFields[idx].ind2 = val;
+    });
+    isDirty = false;
+    btnGuardarCambios.style.display = 'none';
+    actualizarResumen();
+    if (!silencioso) showToast('Cambios guardados ✓', 'success');
+}
+
+btnGuardarCambios.onclick = () => guardarCambios(false);
+
+function eliminarCampo(idx) { guardarCambios(true); currentFields.splice(idx, 1); renderFichaFields(); actualizarResumen(); }
+function eliminarSubcampo(idx, subidx) { guardarCambios(true); currentFields[idx].subcampos.splice(subidx, 1); if (currentFields[idx].subcampos.length === 0) currentFields.splice(idx, 1); renderFichaFields(); actualizarResumen(); }
+function duplicarCampo(idx) { guardarCambios(true); currentFields.splice(idx + 1, 0, JSON.parse(JSON.stringify(currentFields[idx]))); renderFichaFields(); actualizarResumen(); }
+function agregarSubcampoAlCampo(idx) {
+    const code = prompt('Código del nuevo subcampo (una letra o número), ej: a');
+    if (code) { guardarCambios(true); currentFields[idx].subcampos.push({ code: code.trim().charAt(0), valor: '' }); renderFichaFields(); }
+}
+
+// ─────────────────────────────────────────────────────────────
+// PARSEO Y TRANSFORMACIÓN (490 -> 440)
+// ─────────────────────────────────────────────────────────────
+function parsearMrkACampos(marcRaw) {
+    const campos = [];
+    const lineasRaw = marcRaw.split('\n').map(l => l.trim()).filter(Boolean);
+    const lineas = [];
+    for (const linea of lineasRaw) {
+        const m = linea.match(/^=([\d]{3})\s+(.*)/s);
+        if (!m) continue;
+        const tag = m[1], resto = m[2];
+        if (/=\d{3}\s+\$/.test(resto)) {
+            const partes = ('=' + tag + ' ' + resto).split(/(?==\d{3}\s+\$)/);
+            for (const p of partes) { if (p.trim()) lineas.push(p.trim()); }
+        } else lineas.push(linea);
+    }
+
+    for (const linea of lineas) {
+        const m = linea.match(/^=([\d]{3})\s+(.*)/s);
+        if (!m) continue;
+        const tag = m[1];
+        let resto = m[2];
+
+        if (parseInt(tag) < 10) {
+            campos.push({ tag, tipo:'control', valor: resto.replace(/\\/g,'#').trim() });
+            continue;
+        }
+
+        let ind1='#', ind2='#';
+        if (resto.length >= 2 && resto[0] !== '$') {
+            ind1 = resto[0] === '\\' ? '#' : resto[0];
+            ind2 = (resto[1] === '\\' || resto[1] === ' ') ? '#' : resto[1];
+            resto = resto.slice(2);
+        }
+
+        const subcampos = [];
+        const partes = resto.split(/\$(?=[a-zA-Z0-9])/);
+        for (const parte of partes) {
+            if (!parte) continue;
+            if (parte[0].trim()) subcampos.push({ code: parte[0], valor: parte.slice(1).trim() });
+        }
+        if (subcampos.length > 0) campos.push({ tag, tipo:'datos', ind1, ind2, subcampos });
+    }
+    
+    let transformados = transformarCampos490a440(campos);
+    return transformarCampos952a859(transformados);
+}
+
+function transformarCampos490a440(campos) {
+    return campos.map(campo => {
+        if (campo.tag === '490' && campo.tipo === 'datos') {
+            return { ...campo, tag: '440' };
+        }
+        return campo;
+    });
+}
+
+function transformarCampos952a859(campos) {
+    function getSubDe(tag) {
+        const c = campos.find(c => c.tag === tag && c.tipo === 'datos');
+        return c ? (c.subcampos.find(s => s.code === 'a')?.valor.trim() || '') : '';
+    }
+    const autorPrincipal = getSubDe('100') || getSubDe('700');
+    const apellido = autorPrincipal.split(',')[0].trim();
+    const cutter = apellido ? apellido.substring(0,3).toUpperCase() : '';
+
+    return campos.map(campo => {
+        if (campo.tag !== '952' || campo.tipo !== 'datos') return campo;
+        const getSub = code => { const s = campo.subcampos.find(s => s.code === code); return s ? s.valor.trim() : ''; };
+        const barcode = getSub('p'), ubicacion = getSub('z'), clasificacion = getSub('o'), tipoItem = getSub('y');
+        const esBaja = /^BAJA\b/i.test(barcode);
+
+        const subc = [];
+        if (barcode)       subc.push({ code:'a', valor: barcode });
+        if (ubicacion)     subc.push({ code:'l', valor: ubicacion });
+        if (clasificacion) subc.push({ code:'m', valor: clasificacion });
+        if (cutter)        subc.push({ code:'n', valor: cutter });
+        subc.push({ code:'d', valor: esBaja ? 'no disponible' : 'disponible' }, { code:'g', valor: 'Donación' });
+        if (tipoItem)      subc.push({ code:'f', valor: tipoItem });
+        return { tag:'859', tipo:'datos', ind1:'#', ind2:'#', subcampos: subc };
+    });
+}
+
+// ─────────────────────────────────────────────────────────────
+// DESCARGA DE ISO Y TABLAS DE CARACTERES
+// ─────────────────────────────────────────────────────────────
+const MAPEO_SUBCAMPOS = {
+    '008':'a', '100':'abcd9', '700':'abcde9', '110':'ab9', '711':'andc', '710':'ab9', '111':'andc', '130':'ap',
+    '240':'a', '245':'anhbc', '246':'ab', '250':'a', '255':'ab', '260':'abc', '020':'a', '022':'a',
+    '300':'abe', '309':'a', '310':'a', '362':'a', '440':'apv', '800':'a', '810':'ab9', '650':'a',
+    '653':'a', '651':'a', '600':'abcd9', '610':'ab9', '611':'andc', '659':'a', '505':'tr', '500':'a',
+    '521':'a', '520':'a', '530':'a', '545':'a', '536':'a', '585':'a', '502':'a', '856':'nu',
+    '740':'a', '040':'a', '859':'almndgf'
+};
+const ORDEN_SUBCAMPOS = "abcd4enhbc9tr";
+
+function corregirTextoAguapey(texto) {
+    if (!texto) return [];
+    const map = {
+        'á':0xa0,'é':0x82,'í':0xa1,'ó':0xa2,'ú':0xa3,'ñ':0xa4,'Ñ':0xa5,'¿':0xa8,'¡':0xad,
+        'Á':0x41,'É':0x45,'Í':0x49,'Ó':0x4F,'Ú':0x55,'ü':0x81,'Ü':0x9A,'ä':0x84,'ö':0x94,
+        'â':0x83,'ê':0x88,'î':0x8C,'ô':0x93,'û':0x96,'à':0x85,'è':0x8A,'ì':0x8D,'ò':0x95,'ù':0x97,'ç':0x87,'Ç':0x80
+    };
+    const bytes = [];
+    for (const ch of texto) { if (ch in map) bytes.push(map[ch]); else { const c = ch.charCodeAt(0); bytes.push(c <= 0xFF ? c : 0x3F); } }
+    return bytes;
+}
+
+function construirRegistroIso(camposIso) {
+    const SEP = 0x23;
+    const camposSerializados = [];
+    for (const campo of camposIso) {
+        let valorBytes = [];
+        const tagAguapey = parseInt(campo.tag, 10) < 100 ? String(parseInt(campo.tag, 10)) : campo.tag;
+        if (campo.tipo === 'control') valorBytes = corregirTextoAguapey(campo.valor);
+        else {
+            valorBytes.push(campo.ind1 === '#' ? 0x23 : campo.ind1.charCodeAt(0), campo.ind2 === '#' ? 0x23 : campo.ind2.charCodeAt(0));
+            const subcOrdenados = [...campo.subcampos].sort((a,b) => {
+                const ia = ORDEN_SUBCAMPOS.indexOf(a.code), ib = ORDEN_SUBCAMPOS.indexOf(b.code);
+                return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+            });
+            for (const sub of subcOrdenados) {
+                valorBytes.push(0x5E, sub.code.charCodeAt(0), ...corregirTextoAguapey(sub.valor));
+            }
+        }
+        valorBytes.push(SEP);
+        camposSerializados.push({ tag: tagAguapey, bytes: valorBytes });
+    }
+    camposSerializados.sort((a,b) => parseInt(a.tag) - parseInt(b.tag));
+    let dirBytes=[], datBytes=[], pos=0;
+    for (const c of camposSerializados) {
+        const tagDir = c.tag.padStart(3,'0'), tagDirBytes = tagDir.split('').map(ch => ch.charCodeAt(0));
+        const lenStr = String(c.bytes.length).padStart(4,'0'), posStr = String(pos).padStart(5,'0');
+        dirBytes.push(...tagDirBytes, ...(lenStr+posStr).split('').map(ch => ch.charCodeAt(0)));
+        datBytes.push(...c.bytes); pos += c.bytes.length;
+    }
+    const base = 24 + dirBytes.length + 1, total = base + datBytes.length + 1;
+    const leaderStr = String(total).padStart(5,'0') + '0000000' + String(base).padStart(5,'0') + '0004500';
+    const leaderBytes = leaderStr.split('').map(ch => ch.charCodeAt(0));
+    const registro = [...leaderBytes, ...dirBytes, SEP, ...datBytes, SEP];
+    const lineas = [];
+    for (let i=0; i<registro.length; i+=80) lineas.push(...registro.slice(i,i+80), 0x0D, 0x0A);
+    return new Uint8Array(lineas);
+}
+
+function procesarCamposParaIso(camposMrc) {
+    const camposIso = [ { tag:'001', tipo:'control', valor:'BNM003182' }, { tag:'002', tipo:'control', valor:'10001nmm  2200000 a 4500' } ];
+    for (const campo of camposMrc) {
+        if (['952','942','999','003'].includes(campo.tag)) continue;
+        if (campo.tipo === 'control') { camposIso.push(campo); continue; }
+        const subcPermitidos = MAPEO_SUBCAMPOS[campo.tag];
+        if (!subcPermitidos) continue;
+        const subcFiltrados = [];
+        for (const sub of campo.subcampos) {
+            let code = sub.code;
+            if (campo.tag === '505' && code === 'a') code = 't';
+            if (code === '9') code = '4';
+            if (!subcPermitidos.includes(sub.code) && !(campo.tag === '505' && sub.code === 'a') && !(sub.code === '9')) continue;
+            let val = sub.valor.trim();
+            if (campo.tag === '245' && sub.code === 'a') val = val.replace(/:/g,'');
+            if (campo.tag === '260' && sub.code === 'b') val = val.replace(/,/g,'');
+            if (campo.tag === '260' && sub.code === 'c') val = val.replace(/\./g,'');
+            if (campo.tag === '260' || campo.tag === '300') val = val.replace(/:/g,'').replace(/;/g,'');
+            if (campo.tag === '250' && sub.code === 'a') val = normalizarEdicion(val);
+            if (val.replace(/\s+/g,' ').trim()) subcFiltrados.push({ code, valor: val.replace(/\s+/g,' ').trim() });
+        }
+        if (subcFiltrados.length > 0) camposIso.push({ tag:campo.tag, tipo:'datos', ind1:campo.ind1, ind2:campo.ind2, subcampos:subcFiltrados });
+    }
+    return construirRegistroIso(camposIso);
+}
+
+function descargarBlob(bytes, filename) {
+    const blob = new Blob([bytes], { type:'application/octet-stream' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename; document.body.appendChild(a);
+    a.click(); document.body.removeChild(a);
+}
+
+btnDescargarIsoActual.onclick = () => {
+    if (isDirty) guardarCambios(true);
+    const bytes = procesarCamposParaIso(currentFields);
+    descargarBlob(bytes, `registro_${indiceActual+1}.iso`);
+    showToast('Descarga del registro actual exitosa', 'success');
+};
+
+btnDescargarIsoLote.onclick = () => {
+    if (isDirty) guardarCambios(true);
+    let todosBytes = [];
+    for(let i = 0; i < loteRegistros.length; i++){
+        const bytes = procesarCamposParaIso(loteRegistros[i].campos);
+        todosBytes.push(...bytes);
+    }
+    descargarBlob(new Uint8Array(todosBytes), `lote_${loteRegistros.length}_registros.iso`);
+    showToast(`Descarga de lote completo (${loteRegistros.length} registros) exitosa`, 'success');
+};
+
+// ─── TOAST ──────────────────────────────────────────────────
+function showToast(msg, type='success', duration=3500) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div'); toast.className = `toast ${type}`;
+    const msgDiv = document.createElement('div'); msgDiv.className = 'toast-msg'; msgDiv.textContent = msg;
+    const footer = document.createElement('div'); footer.className = 'toast-footer';
+    const barWrap = document.createElement('div'); barWrap.className = 'toast-bar-wrap';
+    const bar = document.createElement('div'); bar.className = 'toast-bar';
+    barWrap.appendChild(bar);
+    const okBtn = document.createElement('button'); okBtn.className = 'toast-ok'; okBtn.textContent = 'Aceptar';
+    footer.appendChild(barWrap); footer.appendChild(okBtn);
+    toast.appendChild(msgDiv); toast.appendChild(footer);
+    container.appendChild(toast);
+    requestAnimationFrame(() => { bar.style.transition = `width ${duration}ms linear`; bar.style.width = '0%'; });
+    function close() { toast.style.animation = 'toastOut 0.2s ease forwards'; setTimeout(() => toast.remove(), 220); }
+    const timer = setTimeout(close, duration);
+    okBtn.onclick = () => { clearTimeout(timer); close(); };
+}
+</script>
+</body>
+</html>
