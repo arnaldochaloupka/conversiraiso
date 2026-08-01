@@ -11,7 +11,7 @@
 // Netlify (Site configuration → Environment variables). Se consigue
 // gratis, sin tarjeta, en https://aistudio.google.com
 
-const MODELO = 'gemini-2.5-flash'; //
+const MODELO = 'gemini-3.5-flash'; // Modelo actual estable con cuota gratuita amplia
 
 exports.handler = async function (event) {
   if (event.httpMethod !== 'POST') {
