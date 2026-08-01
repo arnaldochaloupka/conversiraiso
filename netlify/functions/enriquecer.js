@@ -11,7 +11,7 @@
 // Netlify (Site configuration → Environment variables). Se consigue
 // gratis, sin tarjeta, en https://aistudio.google.com
 
-const MODELO = 'gemini-flash-latest'; // alias que siempre apunta al Flash más reciente
+const MODELO = 'gemini-2.5-flash'; // modelo estable con cuota gratuita documentada (1500 solicitudes/día)
 
 exports.handler = async function (event) {
   if (event.httpMethod !== 'POST') {
