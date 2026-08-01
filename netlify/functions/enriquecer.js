@@ -38,7 +38,7 @@ REGLAS ESTRICTAS (SIN EXCEPCIONES):
 4. ENRIQUECER CONTENIDO: Agregá estos campos al final (antes de los campos locales 9XX) para mejorar el descubrimiento de la obra:
    - =520  \\\\$a (Resumen descriptivo o sinopsis de la obra)
    - =500  \\\\$a (Notas generales sobre el contenido)
-   - =653  \\\\$a (Términos propuestos o palabras clave, creando una línea =653 por cada término)
+   - =653  \\\\$a (Términos propuestos o palabras clave, creando una línea =653 por cada término, todos los términos o palarbas deben estar en MAYÚSCULAS)
 5. REGLA DE ORO ANTIALUCINACIÓN: Si no estás 100% seguro de un dato técnico (por ejemplo, la cantidad exacta de páginas o la edición), NO LO INVENTES. Es preferible que el campo quede vacío a ingresar un dato falso en el catálogo.
 6. FORMATO DE SALIDA: Devolvé ÚNICAMENTE el texto en formato MARC21 plano, con los registros separados por una línea en blanco. No agregues saludos, ni explicaciones, ni markdown.`;
 
