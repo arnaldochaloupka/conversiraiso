@@ -1,6 +1,6 @@
 // netlify/functions/enriquecer.js
 
-const MODELO = 'gemini-1.5-flash'; // El modelo con mayor cuota gratuita garantizada
+const MODELO = 'gemini-3.5-flash';
 
 exports.handler = async function (event) {
   if (event.httpMethod !== 'POST') {
