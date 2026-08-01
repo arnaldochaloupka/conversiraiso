@@ -275,6 +275,7 @@ body.dark-mode .campo-nuevo {
 <div class="paste-zone" style="border-color: #803020; background: #fdf2f0; margin-top: 20px;">
     <p class="paste-zone-title" style="color: #803020;"><strong>✨ Enriquecer Lote Masivo con IA (Magia Aguapey)</strong></p>
     <textarea id="loteIaPegado" placeholder="Pegá acá tu lote de registros MARC21 crudos..."></textarea>
+    <button id="btnConvertirMarc21IA" type="button" style="background-color:#3f80b8;"><i class="fas fa-wand-magic-sparkles"></i> Convertir a MARC21</button>
     <button id="btnEjecutarMagia" type="button" style="background-color: #803020;">Procesar Lote con IA</button>
 </div>
 <div class="split-container">
@@ -407,6 +408,11 @@ document.getElementById('btnConvertirMarc21').onclick = () => {
     const text = document.getElementById('marc21Pegado').value;
     if (!text) return showToast('Pegá el contenido primero', 'error');
     procesarTextoGenerico(text, 'txt', 'Pegado Manual (MARC21)');
+};
+document.getElementById('btnConvertirMarc21IA').onclick = () => {
+    const text = document.getElementById('loteIaPegado').value;
+    if (!text) return showToast('Pegá el contenido primero', 'error');
+    procesarTextoGenerico(text, 'txt', 'Lote MARC21 (texto plano)');
 };
 
 // ─── Paginación Eventos ───────────────────────────────────────
