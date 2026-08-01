@@ -595,8 +595,11 @@ function actualizarResumen() {
 function renderFichaFields() {
     let html = '';
     currentFields.forEach((f, i) => {
+        // Chequeamos si el campo fue marcado como nuevo por la IA
+        const claseNuevo = f.isNuevo ? ' campo-nuevo' : ''; 
+
         if (f.tipo === 'control') {
-            html += `<div class="marc-row" data-idx="${i}">
+            html += `<div class="marc-row${claseNuevo}" data-idx="${i}">
                 <span class="marc-tag">${escapeHtml(f.tag)}</span>
                 <span class="marc-value" contenteditable="true" spellcheck="false" data-idx="${i}" data-type="control">${escapeHtml(f.valor)}</span>
                 <span class="field-toolbar">
@@ -607,7 +610,7 @@ function renderFichaFields() {
             const subs = f.subcampos.map((s, si) => `
                 <span class="marc-sub"><b>$${escapeHtml(s.code)}</b><span class="marc-value" contenteditable="true" spellcheck="false" data-idx="${i}" data-subidx="${si}" data-type="sub">${escapeHtml(s.valor)}</span><button type="button" class="btn-mini-x" data-idx="${i}" data-subidx="${si}">&times;</button></span>`
             ).join('');
-            html += `<div class="marc-row" data-idx="${i}">
+            html += `<div class="marc-row${claseNuevo}" data-idx="${i}">
                 <span class="marc-tag">${escapeHtml(f.tag)} <span class="marc-ind" contenteditable="true" spellcheck="false" data-idx="${i}" data-indpos="1">${escapeHtml(f.ind1)}</span><span class="marc-ind" contenteditable="true" spellcheck="false" data-idx="${i}" data-indpos="2">${escapeHtml(f.ind2)}</span></span>
                 ${subs}
                 <span class="field-toolbar">
@@ -891,9 +894,40 @@ document.getElementById('btnEjecutarMagia').onclick = async () => {
         });
         if (!respuesta.ok) throw new Error('Error en el servidor');
         const datos = await respuesta.json();
+
         if (datos.resultado) {
+            // 1. Cargar el resultado en pantalla (esto crea los objetos en loteRegistros)
             procesarTextoGenerico(datos.resultado, 'txt', 'Lote_Enriquecido_IA.mrk');
-            alert('¡Lote enriquecido con éxito! Ya podés descargar tu .iso');
+
+            // 2. Separar el texto original ingresado para poder comparar registro a registro
+            let porLDROriginal = textoLote.split(/(?==LDR\s)/).map(t => t.trim()).filter(Boolean);
+            if(porLDROriginal.length === 0) porLDROriginal = [textoLote];
+
+            // 3. Comparar cada campo enriquecido con los campos originales
+            loteRegistros.forEach((reg, i) => {
+                const textoOrig = porLDROriginal[i] || "";
+                const camposOrig = parsearMrkACampos(textoOrig); // Parseamos el original en memoria
+
+                reg.campos.forEach(campoEnriquecido => {
+                    // Buscar si existe un campo idéntico en el array original
+                    const existeEnOriginal = camposOrig.some(cOrig => {
+                        if (cOrig.tag !== campoEnriquecido.tag) return false;
+                        if (cOrig.tipo === 'control') return cOrig.valor === campoEnriquecido.valor;
+                        // Comparamos los subcampos convirtiéndolos a texto plano para facilitar la verificación
+                        return JSON.stringify(cOrig.subcampos) === JSON.stringify(campoEnriquecido.subcampos);
+                    });
+
+                    // Si NO existe en el original, lo marcamos como nuevo
+                    if (!existeEnOriginal) {
+                        campoEnriquecido.isNuevo = true;
+                    }
+                });
+            });
+
+            // 4. Forzamos a volver a mostrar la ficha para que aplique los colores
+            mostrarFicha(indiceActual);
+
+            alert('¡Lote enriquecido con éxito! Ya podés revisar los cambios y descargar tu .iso');
         } else {
             throw new Error('Sin respuesta válida');
         }
